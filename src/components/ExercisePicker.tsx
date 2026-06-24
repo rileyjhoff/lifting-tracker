@@ -112,7 +112,7 @@ export default function ExercisePicker({
 
         <TextField
           select
-          label={`Exercise (${exercisesInGroup.length})`}
+          label="Exercise"
           value=""
           disabled={pending || exercisesInGroup.length === 0}
           onChange={(e) => {
