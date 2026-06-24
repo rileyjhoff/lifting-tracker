@@ -37,16 +37,21 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path === "/login" || path.startsWith("/auth");
 
-  if (!user && !isAuthRoute) {
+  // Build a redirect that preserves any session cookies refreshed above.
+  const redirectTo = (pathname: string) => {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    url.pathname = pathname;
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value, c));
+    return redirect;
+  };
+
+  if (!user && !isAuthRoute) {
+    return redirectTo("/login");
   }
 
   if (user && path === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    return redirectTo("/");
   }
 
   return response;

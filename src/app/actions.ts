@@ -44,6 +44,17 @@ async function ensureWorkout(supabase: DB, dateISO: string): Promise<string> {
 
 export async function addExerciseToDate(dateISO: string, exerciseId: string) {
   const supabase = await createClient();
+
+  // Only allow attaching an exercise the user can actually read (a shared preset
+  // or their own custom). This RLS-scoped lookup returns null for a foreign or
+  // non-existent id, so we fail cleanly instead of creating a dangling row.
+  const { data: ex } = await supabase
+    .from("exercises")
+    .select("id")
+    .eq("id", exerciseId)
+    .maybeSingle();
+  if (!ex) throw new Error("Exercise not found.");
+
   const workoutId = await ensureWorkout(supabase, dateISO);
 
   const { data: last } = await supabase
