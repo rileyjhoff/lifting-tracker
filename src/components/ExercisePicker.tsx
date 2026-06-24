@@ -1,16 +1,16 @@
 "use client";
 
 import * as React from "react";
-import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import MenuItem from "@mui/material/MenuItem";
 import Collapse from "@mui/material/Collapse";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
 import AddIcon from "@mui/icons-material/Add";
 import type { Exercise } from "@/lib/types";
-import { MUSCLE_GROUPS, EQUIPMENT } from "@/lib/exercises/catalog";
+import { MUSCLE_GROUPS, EQUIPMENT, muscleSortIndex } from "@/lib/exercises/catalog";
 import { addExerciseToDate, createCustomExercise } from "@/app/actions";
 
 export default function ExercisePicker({
@@ -22,51 +22,118 @@ export default function ExercisePicker({
 }) {
   const [pending, startTransition] = React.useTransition();
   const [showCustom, setShowCustom] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
+  // Custom-exercise form state.
   const [name, setName] = React.useState("");
-  const [muscle, setMuscle] = React.useState<string>(MUSCLE_GROUPS[0]);
+  const [customMuscle, setCustomMuscle] = React.useState<string>(MUSCLE_GROUPS[0]);
   const [equipment, setEquipment] = React.useState<string>(EQUIPMENT[0]);
 
+  // Muscle groups actually present in the catalog (canonical order), so the
+  // dropdown only lists groups that have exercises.
+  const muscleGroups = React.useMemo(() => {
+    const present = new Set(exercises.map((e) => e.primary_muscle));
+    return [...present].sort((a, b) => muscleSortIndex(a) - muscleSortIndex(b));
+  }, [exercises]);
+
+  const [browseMuscle, setBrowseMuscle] = React.useState<string>(
+    muscleGroups[0] ?? MUSCLE_GROUPS[0],
+  );
+
+  // Keep the selected group valid if the catalog changes (e.g. after adding a
+  // custom exercise in a new group).
+  React.useEffect(() => {
+    if (muscleGroups.length && !muscleGroups.includes(browseMuscle)) {
+      setBrowseMuscle(muscleGroups[0]);
+    }
+  }, [muscleGroups, browseMuscle]);
+
+  const exercisesInGroup = React.useMemo(
+    () => exercises.filter((e) => e.primary_muscle === browseMuscle),
+    [exercises, browseMuscle],
+  );
+
   const add = (exerciseId: string) =>
-    startTransition(() => {
-      void addExerciseToDate(dateISO, exerciseId);
+    startTransition(async () => {
+      setError(null);
+      try {
+        await addExerciseToDate(dateISO, exerciseId);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't add the exercise.");
+      }
     });
 
   const createAndAdd = () =>
     startTransition(async () => {
-      const created = await createCustomExercise({
-        name,
-        primary_muscle: muscle,
-        equipment,
-      });
-      await addExerciseToDate(dateISO, created.id);
-      setName("");
-      setShowCustom(false);
+      setError(null);
+      try {
+        const created = await createCustomExercise({
+          name,
+          primary_muscle: customMuscle,
+          equipment,
+        });
+        await addExerciseToDate(dateISO, created.id);
+        setName("");
+        setShowCustom(false);
+        // Jump the browse dropdown to the new exercise's group so it's visible.
+        setBrowseMuscle(created.primary_muscle);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        setError(
+          /duplicate/i.test(msg)
+            ? `You already have an exercise named “${name.trim()}”.`
+            : msg || "Couldn't create the exercise.",
+        );
+      }
     });
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1.5 }}>
+          {error}
+        </Alert>
+      )}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: "stretch" }}>
-        <Autocomplete<Exercise>
-          options={exercises}
-          groupBy={(o) => o.primary_muscle}
-          getOptionLabel={(o) => o.name}
-          isOptionEqualToValue={(o, v) => o.id === v.id}
-          value={null}
-          blurOnSelect
-          disabled={pending}
-          onChange={(_, value) => {
-            if (value) add(value.id);
+        <TextField
+          select
+          label="Muscle group"
+          value={browseMuscle}
+          onChange={(e) => setBrowseMuscle(e.target.value)}
+          size="small"
+          sx={{ minWidth: { sm: 150 } }}
+        >
+          {muscleGroups.map((m) => (
+            <MenuItem key={m} value={m}>
+              {m}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Exercise"
+          value=""
+          disabled={pending || exercisesInGroup.length === 0}
+          onChange={(e) => {
+            if (e.target.value) add(e.target.value);
           }}
+          size="small"
           sx={{ flexGrow: 1 }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Add exercise"
-              placeholder="Search the catalog…"
-            />
-          )}
-        />
+          slotProps={{ select: { displayEmpty: true } }}
+          helperText={`Pick from ${exercisesInGroup.length} ${browseMuscle} exercise${exercisesInGroup.length === 1 ? "" : "s"}`}
+        >
+          <MenuItem value="" disabled>
+            Select an exercise to add…
+          </MenuItem>
+          {exercisesInGroup.map((ex) => (
+            <MenuItem key={ex.id} value={ex.id} data-testid="exercise-option">
+              {ex.name}
+              {ex.is_custom ? " ★" : ""}
+            </MenuItem>
+          ))}
+        </TextField>
+
         <Button
           variant="outlined"
           startIcon={<AddIcon />}
@@ -95,8 +162,8 @@ export default function ExercisePicker({
           <TextField
             select
             label="Muscle"
-            value={muscle}
-            onChange={(e) => setMuscle(e.target.value)}
+            value={customMuscle}
+            onChange={(e) => setCustomMuscle(e.target.value)}
             size="small"
             sx={{ minWidth: 120 }}
           >
