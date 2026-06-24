@@ -112,7 +112,7 @@ export default function ExercisePicker({
 
         <TextField
           select
-          label="Exercise"
+          label={`Exercise (${exercisesInGroup.length})`}
           value=""
           disabled={pending || exercisesInGroup.length === 0}
           onChange={(e) => {
@@ -120,8 +120,10 @@ export default function ExercisePicker({
           }}
           size="small"
           sx={{ flexGrow: 1 }}
-          slotProps={{ select: { displayEmpty: true } }}
-          helperText={`Pick from ${exercisesInGroup.length} ${browseMuscle} exercise${exercisesInGroup.length === 1 ? "" : "s"}`}
+          slotProps={{
+            select: { displayEmpty: true },
+            inputLabel: { shrink: true },
+          }}
         >
           <MenuItem value="" disabled>
             Select an exercise to add…
