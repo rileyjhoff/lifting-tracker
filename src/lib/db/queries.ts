@@ -1,16 +1,18 @@
 import "server-only";
 
-import { supabase } from "./client";
+import { createClient } from "@/lib/supabase/server";
 import type { Exercise, WorkoutDetail } from "@/lib/types";
 
 /**
- * Fetch every workout whose date falls within [startISO, endISO] (inclusive),
- * each with its ordered exercises and sets. Dates are 'YYYY-MM-DD' strings.
+ * Fetch the signed-in user's workouts whose date falls within [startISO, endISO]
+ * (inclusive), each with its ordered exercises and sets. RLS scopes the rows to
+ * the current user. Dates are 'YYYY-MM-DD' strings.
  */
 export async function getWorkoutsInRange(
   startISO: string,
   endISO: string,
 ): Promise<WorkoutDetail[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("workouts")
     .select("*, workout_exercises(*, exercise:exercises(*), sets(*))")
@@ -33,8 +35,9 @@ export async function getWorkoutsInRange(
   return workouts;
 }
 
-/** The full exercise catalog (presets + custom), sorted for grouped display. */
+/** Shared preset exercises plus the current user's custom ones, sorted for display. */
 export async function getExerciseCatalog(): Promise<Exercise[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("exercises")
     .select("*")

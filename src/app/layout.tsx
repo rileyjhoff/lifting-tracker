@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
-import Container from "@mui/material/Container";
 import Providers from "./providers";
-import Header from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,12 +25,7 @@ export default function RootLayout({
         {/* Sets the color-scheme class before paint to avoid a flash. */}
         <InitColorSchemeScript attribute="class" />
         <AppRouterCacheProvider options={{ key: "mui" }}>
-          <Providers>
-            <Header />
-            <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
-              {children}
-            </Container>
-          </Providers>
+          <Providers>{children}</Providers>
         </AppRouterCacheProvider>
       </body>
     </html>
