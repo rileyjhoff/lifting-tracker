@@ -51,9 +51,17 @@ export default function CalendarMonth({
 
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
 
+  // `todayISO` is the server's date (UTC on Vercel). Re-derive "today" from the
+  // browser clock after mount so the highlight and "Today" button reflect the
+  // user's actual local day regardless of the server's timezone.
+  const [clientToday, setClientToday] = React.useState(todayISO);
+  React.useEffect(() => {
+    setClientToday(dayjs().format("YYYY-MM-DD"));
+  }, []);
+
   const prevMonth = monthStart.subtract(1, "month").format("YYYY-MM");
   const nextMonth = monthStart.add(1, "month").format("YYYY-MM");
-  const thisMonth = dayjs(todayISO).format("YYYY-MM");
+  const thisMonth = dayjs(clientToday).format("YYYY-MM");
 
   return (
     <Box>
@@ -120,7 +128,7 @@ export default function CalendarMonth({
         {days.map((day) => {
           const iso = day.format("YYYY-MM-DD");
           const inMonth = day.month() === monthStart.month();
-          const isToday = iso === todayISO;
+          const isToday = iso === clientToday;
           const workout = byDate.get(iso);
           const exCount = workout?.workout_exercises.length ?? 0;
           const setCount =
