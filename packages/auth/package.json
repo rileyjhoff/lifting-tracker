@@ -1,0 +1,18 @@
+{
+  "name": "@riley/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable Supabase auth for Next.js App Router: SSR clients + session/route-guard proxy.",
+  "exports": {
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts",
+    "./proxy": "./src/proxy.ts"
+  },
+  "peerDependencies": {
+    "@supabase/ssr": ">=0.6",
+    "@supabase/supabase-js": ">=2",
+    "next": ">=15",
+    "react": ">=19"
+  }
+}
