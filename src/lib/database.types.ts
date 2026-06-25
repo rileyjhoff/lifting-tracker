@@ -87,8 +87,6 @@ export type Database = {
           id: string
           notes: string | null
           position: number
-          rest_after_exercise_seconds: number | null
-          rest_between_sets_seconds: number | null
           workout_id: string
         }
         Insert: {
@@ -97,8 +95,6 @@ export type Database = {
           id?: string
           notes?: string | null
           position?: number
-          rest_after_exercise_seconds?: number | null
-          rest_between_sets_seconds?: number | null
           workout_id: string
         }
         Update: {
@@ -107,8 +103,6 @@ export type Database = {
           id?: string
           notes?: string | null
           position?: number
-          rest_after_exercise_seconds?: number | null
-          rest_between_sets_seconds?: number | null
           workout_id?: string
         }
         Relationships: [
