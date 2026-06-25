@@ -88,18 +88,11 @@ export async function removeWorkoutExercise(id: string) {
   revalidatePath("/");
 }
 
-export async function updateRest(
-  id: string,
-  restBetweenSetsSeconds: number | null,
-  restAfterExerciseSeconds: number | null,
-) {
+export async function updateExerciseNotes(id: string, notes: string | null) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("workout_exercises")
-    .update({
-      rest_between_sets_seconds: restBetweenSetsSeconds,
-      rest_after_exercise_seconds: restAfterExerciseSeconds,
-    })
+    .update({ notes })
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/");

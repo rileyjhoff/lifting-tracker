@@ -14,14 +14,13 @@ import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import TimerOutlinedIcon from "@mui/icons-material/TimerOutlined";
 import type { WorkoutExercise } from "@/lib/types";
 import {
   addSet,
   removeSet,
   removeWorkoutExercise,
   setExerciseUnit,
-  updateRest,
+  updateExerciseNotes,
   updateSet,
 } from "@/app/actions";
 
@@ -44,25 +43,6 @@ export default function ExerciseSetsEditor({
     });
 
   const unit = we.sets[0]?.unit ?? "lb";
-
-  // Local state for the optional rest fields; saved together on blur.
-  const [restBetween, setRestBetween] = React.useState(
-    we.rest_between_sets_seconds?.toString() ?? "",
-  );
-  const [restAfter, setRestAfter] = React.useState(
-    we.rest_after_exercise_seconds?.toString() ?? "",
-  );
-
-  const saveRest = () => {
-    const between = toNumOrNull(restBetween);
-    const after = toNumOrNull(restAfter);
-    if (
-      between !== we.rest_between_sets_seconds ||
-      after !== we.rest_after_exercise_seconds
-    ) {
-      run(() => updateRest(we.id, between, after));
-    }
-  };
 
   return (
     <Paper
@@ -192,34 +172,23 @@ export default function ExerciseSetsEditor({
         </Button>
       </Box>
 
-      {/* Optional rest timings */}
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ mt: 1.5, color: "text.secondary", alignItems: "center" }}
-      >
-        <TimerOutlinedIcon fontSize="small" />
-        <TextField
-          label="Rest / sets (s)"
-          value={restBetween}
-          onChange={(e) => setRestBetween(e.target.value)}
-          onBlur={saveRest}
-          type="number"
-          size="small"
-          slotProps={{ htmlInput: { inputMode: "numeric", step: "5", min: 0 } }}
-          sx={{ flex: 1 }}
-        />
-        <TextField
-          label="Rest after (s)"
-          value={restAfter}
-          onChange={(e) => setRestAfter(e.target.value)}
-          onBlur={saveRest}
-          type="number"
-          size="small"
-          slotProps={{ htmlInput: { inputMode: "numeric", step: "5", min: 0 } }}
-          sx={{ flex: 1 }}
-        />
-      </Stack>
+      {/* Optional per-exercise notes (e.g. rest times, tempo, cues) */}
+      <TextField
+        key={`note-${we.id}`}
+        defaultValue={we.notes ?? ""}
+        onBlur={(e) => {
+          const value = e.target.value.trim() || null;
+          if (value !== (we.notes ?? null)) {
+            run(() => updateExerciseNotes(we.id, value));
+          }
+        }}
+        label="Notes"
+        placeholder="e.g. rest 90s between sets, drop set on the last…"
+        size="small"
+        fullWidth
+        multiline
+        sx={{ mt: 1.5 }}
+      />
     </Paper>
   );
 }
